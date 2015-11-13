@@ -72,11 +72,11 @@ class BitPagos extends PaymentModule
 
         $languages = Language::getLanguages();
 
-        foreach($states as $key => $state){
+        foreach ($states as $key => $state) {
             $orderState = new OrderState();
             $orderState->name = array();
 
-            foreach($languages as $language){
+            foreach ($languages as $language) {
                 $orderState->name[$language['id_lang']] = $state;
             }
 
@@ -174,7 +174,9 @@ class BitPagos extends PaymentModule
         // Get default Language
         $default_lang = (int)Configuration::get('PS_LANG_DEFAULT');
 
-        $account_id = (Tools::getValue('account_id') ? Tools::getValue('account_id') : Configuration::get('BITPAGOS_ACCOUNT_ID'));
+        $account_id = (Tools::getValue('account_id') ?
+                       Tools::getValue('account_id') :
+                       Configuration::get('BITPAGOS_ACCOUNT_ID'));
         $api_key = (Tools::getValue('api_key') ? Tools::getValue('api_key') : Configuration::get('BITPAGOS_API_KEY'));
 
         // Init Fields form array
