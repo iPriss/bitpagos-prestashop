@@ -27,7 +27,7 @@
 
 <form action="{$form_action|escape:'htmlall':'UTF-8'}">
     <div style="text-align: center">
-        <p>{l s='Thank you for your order, please click the button below to pay with BitPagos'}</p>
+        <p>{l s='Thank you for your order, please click the button below to pay with BitPagos' mod='bitpagos'}</p>
         <script src='https://www.bitpagos.net/public/js/partner/m.js'
                 class='bp-partner-button'
                 data-role='checkout'
