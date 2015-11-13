@@ -1,5 +1,4 @@
-<?php
-/**
+{*
 * 2007-2015 PrestaShop
 *
 * NOTICE OF LICENSE
@@ -22,4 +21,23 @@
 *  @copyright 2007-2015 PrestaShop SA
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
-*/
+*}
+
+<h3>{l s='Pay with BitPagos' mod='bitpagos'}</h3>
+
+<form action="{$form_action|escape:'htmlall':'UTF-8'}">
+    <div style="text-align: center">
+        <p>{l s='Thank you for your order, please click the button below to pay with BitPagos'}</p>
+        <script src='https://www.bitpagos.net/public/js/partner/m.js'
+                class='bp-partner-button'
+                data-role='checkout'
+                data-account-id="{$account_id|escape:'htmlall':'UTF-8'}"
+                data-reference-id="{$reference_id|escape:'htmlall':'UTF-8'}"
+                data-title="{$title|escape:'htmlall':'UTF-8'}"
+                data-amount="{$amount|escape:'htmlall':'UTF-8'}"
+                data-currency="{$currency|escape:'htmlall':'UTF-8'}"
+                data-description="{$description|escape:'htmlall':'UTF-8'}"
+                data-ipn="{$ipn_url|escape:'htmlall':'UTF-8'}">
+        </script>
+    </div>
+</form>
