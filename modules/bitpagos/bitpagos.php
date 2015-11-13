@@ -24,11 +24,11 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-class bitpagos extends PaymentModule
+class BitPagos extends PaymentModule
 {
 
-    private $_html = '';
-    private $_postErrors = array();
+    private $html = '';
+    private $postErrors = array();
 
     public function __construct()
     {
@@ -118,7 +118,7 @@ class bitpagos extends PaymentModule
 
     }
 
-    public function is_configured()
+    public function isConfigured()
     {
 
         $account_id = Tools::safeOutput(Configuration::get('BITPAGOS_ACCOUNT_ID'));
@@ -264,7 +264,18 @@ class bitpagos extends PaymentModule
     {
 
         $pending_status = Configuration::get('BITPAGOS_PENDING');
-        $validate = $this->validateOrder((int)$cart->id, $pending_status, (float)$cart->getOrderTotal(), $this->displayName, null, array(), null, false, $cart->secure_key);
+        $validate = $this->validateOrder(
+            (int)$cart->id,
+            $pending_status,
+            (float)$cart->getOrderTotal(),
+            $this->displayName,
+            null,
+            array(),
+            null,
+            false,
+            $cart->secure_key
+        );
+
         if ($validate) {
             return new Order($this->currentOrder);
         } else {
@@ -291,14 +302,15 @@ class bitpagos extends PaymentModule
             'currency' => 'USD',
             'description' => 'description here',
             'title' => 'title here',
-            'form_action' => _PS_MODULE_DIR_ . 'bitpagos/views/templates/success.tpl',
+            'form_action' => _PS_MODULE_DIR_ . 'bitpagos/views/templates/front/success.tpl',
             'ipn_url' => $ipn_url,
             'account_id' => Configuration::get('BITPAGOS_ACCOUNT_ID'),
             'api_key' => Configuration::get('BITPAGOS_API_KEY'),
-            'this_path_ssl' => (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'modules/'.$this->name.'/'
+            'this_path_ssl' => (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://')
+            .htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'modules/'.$this->name.'/'
         ));
 
-        return $this->display(__FILE__, '/views/templates/bitpagos_btn.tpl');
+        return $this->display(__FILE__, '/views/templates/front/bitpagos_btn.tpl');
 
     }
 
@@ -309,9 +321,11 @@ class bitpagos extends PaymentModule
 
         $this->context->smarty->assign(array(
             'this_path'         => $this->_path,
-            'this_path_ssl'     => Configuration::get('PS_FO_PROTOCOL') . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . "modules/{$this->name}/"));
+            'this_path_ssl'     => Configuration::get('PS_FO_PROTOCOL') .
+                                   $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . "modules/{$this->name}/"
+        ));
 
-        return $this->display(__FILE__, '/views/templates/payment.tpl');
+        return $this->display(__FILE__, '/views/templates/hook/payment.tpl');
 
     }
 
@@ -319,5 +333,4 @@ class bitpagos extends PaymentModule
     {
 
     }
-
 }

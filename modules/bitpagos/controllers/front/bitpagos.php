@@ -24,9 +24,8 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-class bitpagosbitpagosModuleFrontController extends FrontController
+class BitPagosModuleFrontController extends FrontController
 {
-
     public $php_self = 'bitpagos';
 
     public function __construct()
@@ -73,5 +72,4 @@ class bitpagosbitpagosModuleFrontController extends FrontController
         }
 
     }
-
 }

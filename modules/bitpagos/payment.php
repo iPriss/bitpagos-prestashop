@@ -30,12 +30,12 @@ include(dirname(__FILE__).'/bitpagos.php');
 
 $context = Context::getContext();
 
-if ($context->customer->isLogged()) {
+if (!$context->customer->isLogged()) {
     Tools::redirect('authentication.php?back=order.php');
 }
 
-$bitpagos = new bitpagos();
-if ($bitpagos->is_configured()) {
+$bitpagos = new BitPagos();
+if ($bitpagos->isConfigured()) {
     $order = $bitpagos->createPendingOrder($context->cart);
     if ($order) {
         echo $bitpagos->showBitPagosButton($context->cart, $order);
