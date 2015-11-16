@@ -35,6 +35,7 @@ class BitPagos extends PaymentModule
 
         $this->name = 'bitpagos';
         $this->tab = 'payments_gateways';
+        $this->ps_versions_compliancy = array('min' => '1.4', 'max' => '1.6');
         $this->version = '2.0.0';
         $this->author = 'BitPagos';
         $this->controllers = array('payment', 'validation');
