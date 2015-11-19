@@ -69,7 +69,14 @@ class BitPagos extends PaymentModule
     private function createBitPagosStates()
     {
 
-        $states = array('BITPAGOS_PENDING' => 'BitPagos: Pending', 'BITPAGOS_COMPLETED' => 'BitPagos: Completed');
+        $states = array(
+            'BITPAGOS_WAITING'   => 'BitPagos: Waiting',
+            'BITPAGOS_PENDING'   => 'BitPagos: Pending',
+            'BITPAGOS_PAID'      => 'BitPagos: Paid',
+            'BITPAGOS_COMPLETED' => 'BitPagos: Completed',
+            'BITPAGOS_REFUND'    => 'BitPagos: Refund',
+            'BITPAGOS_CANCELLED' => 'BitPagos: Cancelled'
+        );
 
         $languages = Language::getLanguages();
 
@@ -296,7 +303,7 @@ class BitPagos extends PaymentModule
 
         // global $cookie, $smarty; // Use of globals is forbidden
 
-        $ipn_url = _PS_BASE_URL_.__PS_BASE_URI__.'bitpagos_ipn.php';
+        $ipn_url = _PS_BASE_URL_.__PS_BASE_URI__.'modules/bitpagos/ipn.php';
 
         $this->context->smarty->assign(array(
             'this_path' => $this->_path,
@@ -305,7 +312,8 @@ class BitPagos extends PaymentModule
             'currency' => 'USD',
             'description' => 'description here',
             'title' => 'title here',
-            'form_action' => _PS_MODULE_DIR_ . 'bitpagos/views/templates/front/success.tpl',
+            // 'form_action' => _PS_MODULE_DIR_ . 'bitpagos/views/templates/front/success.tpl',
+            'form_action' => _PS_BASE_URL_.__PS_BASE_URI__.'order-history',
             'ipn_url' => $ipn_url,
             'account_id' => Configuration::get('BITPAGOS_ACCOUNT_ID'),
             'api_key' => Configuration::get('BITPAGOS_API_KEY'),
@@ -332,8 +340,56 @@ class BitPagos extends PaymentModule
 
     }
 
-    public function hookPaymentReturn($params)
+    public function confirmOrder($dataInput)
     {
+        $result = Tools::jsonDecode($this->getResult(), true);
 
+        $id_order = $dataInput['reference_id'];
+
+        Context::getContext()->language = new Language((int)Context::getContext()->cart->id_lang);
+
+        if ($id_order != 0) {
+            $objOrder = new Order($id_order);
+
+            $history = new OrderHistory();
+            $history->id_order = (int)$objOrder->id;
+
+            $status = false;
+            $current_state = $objOrder->getCurrentState();
+
+            if ($current_state == Configuration::get('BITPAGOS_PENDING') && $result['status'] === 'CO') {
+                $status = (int)(Configuration::get('BITPAGOS_COMPLETED'));
+            } elseif ($current_state != Configuration::get('BITPAGOS_REFUND') && $result['status'] === 'RE') {
+                $status = (int)(Configuration::get('BITPAGOS_REFUND'));
+            } elseif ($current_state != Configuration::get('BITPAGOS_WAITING') && $result['status'] === 'WA') {
+                $status = (int)(Configuration::get('BITPAGOS_WAITING'));
+            } elseif ($current_state != Configuration::get('BITPAGOS_PAID') && $result['status'] === 'PA') {
+                $status = (int)(Configuration::get('BITPAGOS_PAID'));
+            } elseif ($current_state != Configuration::get('BITPAGOS_CANCELLED') && $result['status'] === 'CA') {
+                $status = (int)(Configuration::get('BITPAGOS_CANCELLED'));
+            } elseif ($current_state != Configuration::get('BITPAGOS_PENDING') && $result['status'] === 'PE') {
+                $status = (int)(Configuration::get('BITPAGOS_PENDING'));
+            }
+
+            if ($status) {
+                $history->changeIdOrderState($status, (int)($objOrder->id));
+                $history->addWithemail();
+                $history->save();
+            }
+        }
+    }
+
+    public function getResult()
+    {
+        $action_url = "https://www.bitpagos.com/api/v1/transaction/";
+
+        $request = '';
+        $request .= urlencode(Tools::stripslashes(Tools::getValue('transaction_id')));
+        $request .= '/?api_key=' . Tools::safeOutput(Configuration::get('BITPAGOS_API_KEY'));
+        $request .= '&format=json';
+
+        $handle = fopen(dirname(__FILE__).'/log.txt', 'w+');
+        fwrite($handle, $action_url.$request);
+        return Tools::file_get_contents($action_url.$request);
     }
 }
