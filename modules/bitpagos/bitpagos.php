@@ -51,6 +51,11 @@ class BitPagos extends PaymentModule
         $this->displayName = $this->l('BitPagos');
         $this->description = $this->l('BitPagos Payment module');
 
+        /* Backward compatibility */
+        if (_PS_VERSION_ < '1.5') {
+            require(_PS_MODULE_DIR_.$this->name.'/backward_compatibility/backward.php');
+        }
+
     }
 
     public function install()
@@ -142,24 +147,30 @@ class BitPagos extends PaymentModule
     // Get admin form
     public function getContent()
     {
-
-        $output = '';
+        $this->_errors = array();
+        $output = '<h2>'.$this->displayName.'</h2>';
 
         if (Tools::isSubmit('submit' . $this->name)) {
+            if (sizeof($this->_errors) == 0) {
+                if ($this->validateSettings()) {
+                    Configuration::updateValue('BITPAGOS_ACCOUNT_ID', Tools::safeOutput(Tools::getValue('account_id')));
+                    Configuration::updateValue('BITPAGOS_API_KEY', Tools::safeOutput(Tools::getValue('api_key')));
 
-            if ($this->validateSettings()) {
-                Configuration::updateValue('BITPAGOS_ACCOUNT_ID', Tools::safeOutput(Tools::getValue('account_id')));
-                Configuration::updateValue('BITPAGOS_API_KEY', Tools::safeOutput(Tools::getValue('api_key')));
-            } else {
-                $output .= $this->displayError($this->l('Invalid Configuration value'));
+                    if (_PS_VERSION_ < '1.5') {
+                        $output .= $this->displayConf($this->l('Settings updated'));
+                    }
+                } else {
+                    $output .= $this->displayError($this->l('Invalid Configuration value'));
+                }
             }
-
-            return true;
-
         }
 
-        return $output . $this->displayForm();
-
+        // /* Backward compatibility */
+        if (_PS_VERSION_ < '1.5') {
+            return $output . $this->displayForm14();
+        } else {
+            return $output . $this->displayForm();
+        }
     }
 
     private function validateSettings()
@@ -198,14 +209,14 @@ class BitPagos extends PaymentModule
                     'type' => 'text',
                     'label' => $this->l('Api Key'),
                     'name' => 'api_key',
-                    'size' => 40,
+                    'size' => 50,
                     'required' => true
                 ),
                 array(
                     'type' => 'text',
                     'label' => $this->l('Account ID'),
                     'name' => 'account_id',
-                    'size' => 40,
+                    'size' => 50,
                     'required' => true
                 ),
                 /*
@@ -270,6 +281,72 @@ class BitPagos extends PaymentModule
 
     }
 
+    private function displayForm14()
+    {
+        // Get default Language
+        $default_lang = (int)Configuration::get('PS_LANG_DEFAULT');
+
+        $account_id = (Tools::getValue('account_id') ?
+                       Tools::getValue('account_id') :
+                       Configuration::get('BITPAGOS_ACCOUNT_ID'));
+        $api_key = (Tools::getValue('api_key') ? Tools::getValue('api_key') : Configuration::get('BITPAGOS_API_KEY'));
+
+        $form = '';
+        $form .= '<script type="text/javascript">';
+        $form .= 'id_language = Number('.$default_lang.');';
+        $form .= '</script>';
+
+        $form .= '<form action="' . $_SERVER['REQUEST_URI'] . '"';
+        $form .= 'method="post"';
+
+        $form .= '<fieldset>';
+        $form .= '<legend><img src="'.$this->_path.'logo.gif" alt="" title="" />';
+        $form .= $this->l('Settings BitPagos API') . '</legend>';
+
+        $form .= '<label>'. $this->l('Api Key:') .'</label>';
+        $form .= '<div class="margin-form">';
+        $form .= '<input size="50" type="text" name="api_key" value="'. $api_key .'" />';
+        $form .= '</div>';
+
+        $form .= '<label>'. $this->l('Account ID:') .'</label>';
+        $form .= '<div class="margin-form">';
+        $form .= '<input size="50" type="text" name="account_id" value="'. $account_id .'" />';
+        $form .= '</div>';
+
+        $form .= '<div class="margin-form">';
+        $form .= '<input type="submit" value="'.$this->l('Save').'" name="submit'.$this->name.'" class="button" />';
+        $form .= '</div>';
+
+        $form .= '<fieldset>';
+        $form .= '<form>';
+
+        return $form;
+    }
+
+    public function displayErrors()
+    {
+        $errors =
+            '<div class="error">
+                <img src="../img/admin/error2.png" />
+                '.sizeof($this->_errors).' '.(sizeof($this->_errors) > 1 ? $this->l('errors') : $this->l('error')).'
+                <ol>';
+        foreach ($this->_errors as $error) {
+            $errors .= '<li>'.$error.'</li>';
+        }
+        $errors .= '
+                </ol>
+            </div>';
+        return $errors;
+    }
+
+    public function displayConf($conf)
+    {
+        return
+            '<div class="conf">
+                <img src="../img/admin/ok2.png" /> '.$conf.'
+            </div>';
+    }
+
     public function createPendingOrder($cart)
     {
 
@@ -301,9 +378,13 @@ class BitPagos extends PaymentModule
             return;
         }
 
-        // global $cookie, $smarty; // Use of globals is forbidden
-
         $ipn_url = _PS_BASE_URL_.__PS_BASE_URI__.'modules/bitpagos/ipn.php';
+
+        if (_PS_VERSION_ < '1.5') {
+            $success = 'history.php';
+        } else {
+            $success = 'index.php?controller=history';
+        }
 
         $this->context->smarty->assign(array(
             'this_path' => $this->_path,
@@ -313,7 +394,7 @@ class BitPagos extends PaymentModule
             'description' => 'description here',
             'title' => 'title here',
             // 'form_action' => _PS_MODULE_DIR_ . 'bitpagos/views/templates/front/success.tpl',
-            'form_action' => _PS_BASE_URL_.__PS_BASE_URI__.'order-history',
+            'form_action' => _PS_BASE_URL_.__PS_BASE_URI__.$success,
             'ipn_url' => $ipn_url,
             'account_id' => Configuration::get('BITPAGOS_ACCOUNT_ID'),
             'api_key' => Configuration::get('BITPAGOS_API_KEY'),
@@ -342,11 +423,10 @@ class BitPagos extends PaymentModule
 
     public function confirmOrder($dataInput)
     {
+
         $result = Tools::jsonDecode($this->getResult(), true);
 
         $id_order = $dataInput['reference_id'];
-
-        Context::getContext()->language = new Language((int)Context::getContext()->cart->id_lang);
 
         if ($id_order != 0) {
             $objOrder = new Order($id_order);

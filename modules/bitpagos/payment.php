@@ -28,17 +28,25 @@ include(dirname(__FILE__).'/../../config/config.inc.php');
 include(dirname(__FILE__).'/../../header.php');
 include(dirname(__FILE__).'/bitpagos.php');
 
-$context = Context::getContext();
+if (_PS_VERSION_ < '1.5') {
+    $cookie = new Cookie("ps");
+    $logged = $cookie->isLogged();
+    $cart = $cart;
+} else {
+    $context = Context::getContext();
+    $logged = $context->customer->isLogged();
+    $cart = $context->cart;
+}
 
-if (!$context->customer->isLogged()) {
+if (!$logged) {
     Tools::redirect('authentication.php?back=order.php');
 }
 
 $bitpagos = new BitPagos();
 if ($bitpagos->isConfigured()) {
-    $order = $bitpagos->createPendingOrder($context->cart);
+    $order = $bitpagos->createPendingOrder($cart);
     if ($order) {
-        echo $bitpagos->showBitPagosButton($context->cart, $order);
+        echo $bitpagos->showBitPagosButton($cart, $order);
     } else {
         die('Order not created');
     }
