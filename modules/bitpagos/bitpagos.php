@@ -437,7 +437,7 @@ class BitPagos extends PaymentModule
             $status = false;
             $current_state = $objOrder->getCurrentState();
 
-            if ($current_state == Configuration::get('BITPAGOS_PENDING') && $result['status'] === 'CO') {
+            if ($current_state != Configuration::get('BITPAGOS_COMPLETED') && $result['status'] === 'CO') {
                 $status = (int)(Configuration::get('BITPAGOS_COMPLETED'));
             } elseif ($current_state != Configuration::get('BITPAGOS_REFUND') && $result['status'] === 'RE') {
                 $status = (int)(Configuration::get('BITPAGOS_REFUND'));
@@ -470,6 +470,8 @@ class BitPagos extends PaymentModule
 
         $handle = fopen(dirname(__FILE__).'/log.txt', 'w+');
         fwrite($handle, $action_url.$request);
-        return Tools::file_get_contents($action_url.$request);
+        $requestData = Tools::file_get_contents($action_url.$request);
+        fwrite($handle, $requestData.PHP_EOL);
+        return $requestData;
     }
 }
